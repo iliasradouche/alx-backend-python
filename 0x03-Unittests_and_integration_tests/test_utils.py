@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch, Mock
 from parameterized import parameterized
 from typing import Any, Dict, Tuple
-from utils import access_nested_map, get_json
+from utils import access_nested_map, get_json, memoize
 
 
 class TestAccessNestedMap(unittest.TestCase):
@@ -25,7 +25,8 @@ class TestAccessNestedMap(unittest.TestCase):
         expected: Any
     ) -> None:
         """
-        Checks that access_nested_map returns expected output for various inputs.
+        Checks that access_nested_map returns expected output
+        for various inputs.
         """
         self.assertEqual(
             access_nested_map(nested_map, path),
@@ -48,7 +49,10 @@ class TestAccessNestedMap(unittest.TestCase):
         """
         with self.assertRaises(KeyError) as context:
             access_nested_map(nested_map, path)
-        self.assertEqual(str(context.exception), f"'{expected_key}'")
+        self.assertEqual(
+            str(context.exception),
+            f"'{expected_key}'"
+        )
 
 
 class TestGetJson(unittest.TestCase):
@@ -74,7 +78,10 @@ class TestGetJson(unittest.TestCase):
 
             result = get_json(test_url)
             mock_get.assert_called_once_with(test_url)
-            self.assertEqual(result, test_payload)
+            self.assertEqual(
+                result,
+                test_payload
+            )
 
 
 class TestMemoize(unittest.TestCase):
@@ -98,6 +105,12 @@ class TestMemoize(unittest.TestCase):
             obj = TestClass()
             result1 = obj.a_property
             result2 = obj.a_property
-            self.assertEqual(result1, 42)
-            self.assertEqual(result2, 42)
+            self.assertEqual(
+                result1,
+                42
+            )
+            self.assertEqual(
+                result2,
+                42
+            )
             mock_method.assert_called_once()
