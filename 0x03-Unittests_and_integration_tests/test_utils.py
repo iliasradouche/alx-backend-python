@@ -25,7 +25,8 @@ class TestAccessNestedMap(unittest.TestCase):
         expected: Any
     ) -> None:
         """
-        Checks that access_nested_map returns expected output
+        Checks that access_nested_map returns 
+        expected output
         for various inputs.
         """
         self.assertEqual(
@@ -44,7 +45,8 @@ class TestAccessNestedMap(unittest.TestCase):
         expected_key: str
     ) -> None:
         """
-        Verifies that access_nested_map raises KeyError with the correct message
+        Verifies that access_nested_map raises
+        KeyError with the correct message
         when an invalid path is provided.
         """
         with self.assertRaises(KeyError) as context:
@@ -68,7 +70,8 @@ class TestGetJson(unittest.TestCase):
         test_payload: Dict[str, Any]
     ) -> None:
         """
-        Tests that get_json returns the expected payload and that requests.get
+        Tests that get_json returns the expected payload and 
+        that requests.get
         is called exactly once with the correct URL.
         """
         with patch("utils.requests.get") as mock_get:
@@ -91,7 +94,8 @@ class TestMemoize(unittest.TestCase):
 
     def test_memoize(self) -> None:
         """
-        Tests that memoize caches the result of a_property so that
+        Tests that memoize caches the result of 
+        a_property so that
         a_method is only called once.
         """
 
