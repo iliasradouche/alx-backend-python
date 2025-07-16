@@ -30,3 +30,21 @@ class TestAccessNestedMap(unittest.TestCase):
             access_nested_map(nested_map, path),
             expected
         )
+
+    @parameterized.expand([
+        ({}, ("a",), "a"),
+        ({"a": 1}, ("a", "b"), "b"),
+    ])
+    def test_access_nested_map_exception(
+        self,
+        nested_map: Dict[str, Any],
+        path: Tuple[str, ...],
+        expected_key: str
+    ) -> None:
+        """
+        Verifies that access_nested_map raises KeyError with the correct message
+        when an invalid path is provided.
+        """
+        with self.assertRaises(KeyError) as context:
+            access_nested_map(nested_map, path)
+        self.assertEqual(str(context.exception), f"'{expected_key}'")
