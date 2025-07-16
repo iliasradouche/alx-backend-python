@@ -41,10 +41,15 @@ class TestGithubOrgClient(unittest.TestCase):
             "org",
             new_callable=property
         ) as mock_org:
-            mock_org.return_value = {"repos_url": "https://api.github.com/orgs/test/repos"}
+            mock_org.return_value = {
+                "repos_url": "https://api.github.com/orgs/test/repos"
+            }
             client = GithubOrgClient("test")
             result = client._public_repos_url
-            self.assertEqual(result, "https://api.github.com/orgs/test/repos")
+            self.assertEqual(
+                result,
+                "https://api.github.com/orgs/test/repos"
+            )
 
     @patch("client.get_json")
     def test_public_repos(self, mock_get_json):
@@ -66,6 +71,13 @@ class TestGithubOrgClient(unittest.TestCase):
         ) as mock_repos_url:
             client = GithubOrgClient("test")
             result = client.public_repos()
-            self.assertEqual(result, ["repo1", "repo2", "repo3"])
-            mock_get_json.assert_called_once_with("https://api.github.com/orgs/test/repos")
-            self.assertTrue(mock_repos_url.called or mock_repos_url is not None)
+            self.assertEqual(
+                result,
+                ["repo1", "repo2", "repo3"]
+            )
+            mock_get_json.assert_called_once_with(
+                "https://api.github.com/orgs/test/repos"
+            )
+            self.assertTrue(
+                mock_repos_url.called or mock_repos_url is not None
+            )
