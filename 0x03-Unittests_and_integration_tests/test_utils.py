@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Unit tests for the utility functions in utils.py.
-This module tests access_nested_map for various input scenarios.
+This module tests access_nested_map and get_json for various input scenarios.
 """
 
 import unittest
+from unittest.mock import patch, Mock
 from parameterized import parameterized
 from typing import Any, Dict, Tuple
-from utils import access_nested_map
+from utils import access_nested_map, get_json
 
 
 class TestAccessNestedMap(unittest.TestCase):
@@ -48,8 +49,9 @@ class TestAccessNestedMap(unittest.TestCase):
         with self.assertRaises(KeyError) as context:
             access_nested_map(nested_map, path)
         self.assertEqual(str(context.exception), f"'{expected_key}'")
-        
-        class TestGetJson(unittest.TestCase):
+
+
+class TestGetJson(unittest.TestCase):
     """Test cases for the get_json function."""
 
     @parameterized.expand([
