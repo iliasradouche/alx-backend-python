@@ -136,5 +136,6 @@ class MockResponse:
         self._json_data = json_data
 
     def json(self):
-     """Return the mocked JSON data."""
+        """Return the mocked JSON data."""
         return self._json_data
+
