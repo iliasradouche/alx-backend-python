@@ -9,7 +9,7 @@ import fixtures
 
 
 class TestGithubOrgClient(unittest.TestCase):
-    """Test cases for the GithubOrgClient class."""
+    """Unit tests for the GithubOrgClient class."""
 
     @parameterized.expand([
         ("google", {"repos_url": "https://api.github.com/orgs/google/repos"}),
@@ -84,10 +84,11 @@ class TestGithubOrgClient(unittest.TestCase):
     "apache2_repos":  fixtures.APACHE2_REPOS,
 }])
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration tests using real JSON payloads from fixtures."""
+    """Integration tests for GithubOrgClient with fixture payloads."""
 
     @classmethod
     def setUpClass(cls):
+        # Patch requests.get so that .json() returns our fixtures
         cls.get_patcher = patch("requests.get")
         cls.mock_get    = cls.get_patcher.start()
 
@@ -105,7 +106,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher.stop()
 
     def test_public_repos(self):
-        """Test that public_repos returns the expected list of repo names."""
+        """Should return list of repo names from the org payload."""
         client = GithubOrgClient("google")
         self.assertEqual(
             client.public_repos(),
@@ -113,7 +114,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         )
 
     def test_public_repos_with_license(self):
-        """Test that public_repos filters repos by license correctly."""
+        """Should filter returned repos by license key."""
         client = GithubOrgClient("google")
         self.assertEqual(
             client.public_repos(license_key="apache-2.0"),
@@ -122,7 +123,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
 
 
 class MockResponse:
-    """MockResponse to simulate .json() on requests.Response."""
+    """Simple mock of requests.Response returning .json()."""
     def __init__(self, payload):
         self._payload = payload
 
