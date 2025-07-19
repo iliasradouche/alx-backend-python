@@ -18,25 +18,15 @@ class TestGithubOrgClient(unittest.TestCase):
     ])
     @patch("client.get_json")
     def test_org(self, org_name, expected_payload, mock_get_json):
-        """
-        Tests that GithubOrgClient.org returns the correct payload and that
-        get_json is called once with the expected argument.
-        """
         mock_get_json.return_value = expected_payload
-
         client = GithubOrgClient(org_name)
         result = client.org
-
         mock_get_json.assert_called_once_with(
             f"https://api.github.com/orgs/{org_name}"
         )
         self.assertEqual(result, expected_payload)
 
     def test_public_repos_url(self):
-        """
-        Tests that _public_repos_url returns the correct repos_url from
-        the mocked org property.
-        """
         with patch.object(
             GithubOrgClient,
             "org",
@@ -54,17 +44,12 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @patch("client.get_json")
     def test_public_repos(self, mock_get_json):
-        """
-        Tests that public_repos returns the expected list of repo names,
-        that _public_repos_url and get_json are each called once.
-        """
         test_payload = [
             {"name": "repo1"},
             {"name": "repo2"},
             {"name": "repo3"},
         ]
         mock_get_json.return_value = test_payload
-
         with patch.object(
             GithubOrgClient,
             "_public_repos_url",
@@ -89,14 +74,11 @@ class TestGithubOrgClient(unittest.TestCase):
         ({"license": {"key": "other_license"}}, "my_license", False),
     ])
     def test_has_license(self, repo, license_key, expected):
-        """
-        Tests that has_license returns the expected value for different
-        license keys.
-        """
         result = GithubOrgClient.has_license(repo, license_key)
         self.assertEqual(result, expected)
-        
-    @parameterized_class([
+
+
+@parameterized_class([
     {
         "org_payload": fixtures.ORG_PAYLOAD,
         "repos_payload": fixtures.REPOS_PAYLOAD,
@@ -104,7 +86,7 @@ class TestGithubOrgClient(unittest.TestCase):
         "apache2_repos": fixtures.APACHE2_REPOS,
     }
 ])
-    class TestIntegrationGithubOrgClient(unittest.TestCase):
+class TestIntegrationGithubOrgClient(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.get_patcher = patch("requests.get")
@@ -122,6 +104,7 @@ class TestGithubOrgClient(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.get_patcher.stop()
+
 
 class MockResponse:
     def __init__(self, payload):
