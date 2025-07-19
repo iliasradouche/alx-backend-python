@@ -1,7 +1,14 @@
 from rest_framework import serializers
 from .models import User, Conversation, Message
 
+
 class UserSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.CharField()
+    phone_number = serializers.CharField(allow_null=True, required=False)
+    role = serializers.CharField()
+
     class Meta:
         model = User
         fields = [
@@ -13,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "created_at",
         ]
+
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
@@ -26,11 +34,11 @@ class MessageSerializer(serializers.ModelSerializer):
             "message_body",
             "sent_at",
         ]
-        read_only_fields = ["sent_at"]
+
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)
-    messages = MessageSerializer(many=True, read_only=True, source="messages")
+    messages = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
@@ -40,3 +48,7 @@ class ConversationSerializer(serializers.ModelSerializer):
             "created_at",
             "messages",
         ]
+
+    def get_messages(self, obj):
+        messages = obj.messages.all().order_by("sent_at")
+        return MessageSerializer(messages, many=True).data
