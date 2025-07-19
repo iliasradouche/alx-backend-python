@@ -1,4 +1,4 @@
-from rest_framework.routers import DefaultRouter, NestedDefaultRouter
+from rest_framework.routers import DefaultRouter
 from .views import ConversationViewSet, MessageViewSet
 from django.urls import path, include
 
