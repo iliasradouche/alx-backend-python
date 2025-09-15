@@ -1,5 +1,6 @@
 from rest_framework import permissions
 from rest_framework.permissions import BasePermission
+from django.db import models
 from .models import Conversation, Message
 
 
@@ -124,6 +125,41 @@ class MessagePermission(BasePermission):
         # Users can only modify (update/delete) messages they sent
         if request.method in ['PUT', 'PATCH', 'DELETE']:
             return obj.sender == request.user
+        
+        return False
+
+
+class IsParticipantOfConversation(BasePermission):
+    """
+    Custom permission class to control access to conversations and messages.
+    - Allow only authenticated users to access the API
+    - Allow only participants in a conversation to send, view, update and delete messages
+    """
+    
+    def has_permission(self, request, view):
+        """Check if user is authenticated before allowing any access."""
+        return request.user and request.user.is_authenticated
+    
+    def has_object_permission(self, request, view, obj):
+        """Check if user is a participant in the conversation for object-level permissions."""
+        if not (request.user and request.user.is_authenticated):
+            return False
+        
+        # Handle Message objects
+        if isinstance(obj, Message):
+            # Check if user is either sender or receiver of the message
+            if obj.sender == request.user or obj.receiver == request.user:
+                return True
+            
+            # Also check if user is a participant in the conversation
+            if hasattr(obj, 'conversation') and obj.conversation:
+                return request.user in obj.conversation.participants.all()
+            
+            return False
+        
+        # Handle Conversation objects
+        if isinstance(obj, Conversation):
+            return request.user in obj.participants.all()
         
         return False
 

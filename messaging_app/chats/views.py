@@ -7,12 +7,12 @@ from django.utils.decorators import method_decorator
 from django.db import models
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
-from .permissions import ConversationPermission, MessagePermission, IsMessageParticipant
+from .permissions import ConversationPermission, MessagePermission, IsMessageParticipant, IsParticipantOfConversation
 
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    permission_classes = [IsAuthenticated, ConversationPermission]
+    permission_classes = [IsParticipantOfConversation]
     filter_backends = [filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['participants__email']
     ordering_fields = ['created_at']
@@ -26,7 +26,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
         if self.request.user not in conversation.participants.all():
             conversation.participants.add(self.request.user)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=["post"], permission_classes=[IsParticipantOfConversation])
     def send_message(self, request, pk=None):
         conversation = self.get_object()
         serializer = MessageSerializer(data=request.data)
@@ -39,7 +39,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated, MessagePermission]
+    permission_classes = [IsParticipantOfConversation]
     filter_backends = [filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['sender__email', 'message_body']
     ordering_fields = ['sent_at']
