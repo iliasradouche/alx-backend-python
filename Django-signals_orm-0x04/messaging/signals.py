@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -142,3 +142,58 @@ def get_unread_notification_count(user):
         user=user,
         is_read=False
     ).count()
+
+
+@receiver(post_delete, sender=User)
+def cleanup_user_data(sender, instance, **kwargs):
+    """
+    Signal handler to clean up all related data when a user is deleted.
+    
+    This signal is triggered after a User instance is deleted and handles
+    the cleanup of all related messaging data including:
+    - Messages sent by the user
+    - Messages received by the user
+    - Notifications for the user
+    - Message histories edited by the user
+    
+    Args:
+        sender: The User model class
+        instance: The User instance that was deleted
+        **kwargs: Additional keyword arguments
+    """
+    try:
+        # Note: Due to foreign key relationships with CASCADE delete,
+        # most related data should be automatically deleted by Django.
+        # However, we can add custom cleanup logic here if needed.
+        
+        # Log the cleanup operation
+        print(f"Cleaning up data for deleted user: {instance.username} (ID: {instance.id})")
+        
+        # Custom cleanup for any data that might not be handled by CASCADE
+        # For example, if there are any soft-deleted records or special cases
+        
+        # Clean up any orphaned message histories that might reference this user
+        # (This is mainly for safety, as the foreign key should handle this)
+        orphaned_histories = MessageHistory.objects.filter(
+            edited_by_id=instance.id
+        ).exclude(
+            edited_by__isnull=False
+        )
+        
+        if orphaned_histories.exists():
+            orphaned_count = orphaned_histories.count()
+            orphaned_histories.delete()
+            print(f"Cleaned up {orphaned_count} orphaned message histories for user {instance.username}")
+        
+        # Additional cleanup can be added here for other models or special cases
+        # For example, clearing user references in logs, analytics, etc.
+        
+        print(f"Successfully completed cleanup for user: {instance.username}")
+        
+    except Exception as e:
+        # Log the error but don't raise it to avoid interfering with the deletion
+        print(f"Error during user data cleanup for {instance.username}: {str(e)}")
+        # In a production environment, you might want to log this to a proper logging system
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"User data cleanup failed for {instance.username}: {str(e)}")
