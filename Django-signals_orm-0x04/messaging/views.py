@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db import models
 from .models import Message
 import json
 
@@ -172,8 +173,16 @@ def user_deletion_success(request):
 def conversations_list(request):
     """
     Display all conversations for the current user with threading support.
+    Uses direct ORM queries with Message.objects.filter and select_related.
     """
-    conversations = Message.get_conversations_optimized(request.user)
+    # Direct ORM query with Message.objects.filter and select_related
+    conversations = Message.objects.filter(
+        models.Q(sender=request.user) | models.Q(receiver=request.user)
+    ).select_related(
+        'sender', 'receiver', 'parent_message'
+    ).prefetch_related(
+        'replies__sender', 'replies__receiver'
+    ).order_by('-timestamp')
     
     # Group messages by conversation threads
     conversation_threads = {}
@@ -210,6 +219,7 @@ def conversations_list(request):
 def thread_view(request, message_id):
     """
     Display a complete message thread with all replies.
+    Uses direct ORM queries with Message.objects.filter and select_related.
     """
     root_message = get_object_or_404(Message, id=message_id)
     
@@ -220,11 +230,36 @@ def thread_view(request, message_id):
     # Get the actual root of the thread
     thread_root = root_message.get_thread_root()
     
-    # Get all messages in the thread with optimized queries
-    thread_messages = Message.get_thread_optimized(thread_root.id)
+    # Direct ORM query with Message.objects.filter and select_related for thread messages
+    thread_messages = Message.objects.filter(
+        models.Q(id=thread_root.id) | models.Q(parent_message_id=thread_root.id)
+    ).select_related(
+        'sender', 'receiver', 'parent_message'
+    ).prefetch_related(
+        'replies__sender', 'replies__receiver'
+    ).order_by('timestamp')
     
-    # Build the threaded structure
-    threaded_messages = thread_root.get_all_replies_recursive()
+    # Build the threaded structure using recursive ORM queries
+    def get_replies_recursive(message_id, depth=0):
+        """Recursive function to fetch all replies using direct ORM queries."""
+        replies = []
+        # Direct ORM query for replies
+        direct_replies = Message.objects.filter(
+            parent_message_id=message_id
+        ).select_related(
+            'sender', 'receiver'
+        ).order_by('timestamp')
+        
+        for reply in direct_replies:
+            reply_data = {
+                'message': reply,
+                'depth': depth,
+                'replies': get_replies_recursive(reply.id, depth + 1)
+            }
+            replies.append(reply_data)
+        return replies
+    
+    threaded_messages = get_replies_recursive(thread_root.id)
     
     context = {
         'root_message': thread_root,
@@ -295,6 +330,7 @@ def send_message(request):
 def get_thread_json(request, message_id):
     """
     API endpoint to get thread data in JSON format for AJAX requests.
+    Uses direct ORM queries with Message.objects.filter and select_related.
     """
     try:
         root_message = get_object_or_404(Message, id=message_id)
@@ -304,7 +340,28 @@ def get_thread_json(request, message_id):
             raise PermissionDenied("You don't have permission to view this conversation.")
         
         thread_root = root_message.get_thread_root()
-        threaded_messages = thread_root.get_all_replies_recursive()
+        
+        # Recursive function using direct ORM queries
+        def get_replies_recursive_json(message_id, depth=0):
+            """Recursive function to fetch all replies using direct ORM queries for JSON response."""
+            replies = []
+            # Direct ORM query for replies
+            direct_replies = Message.objects.filter(
+                parent_message_id=message_id
+            ).select_related(
+                'sender', 'receiver'
+            ).order_by('timestamp')
+            
+            for reply in direct_replies:
+                reply_data = {
+                    'message': reply,
+                    'depth': depth,
+                    'replies': get_replies_recursive_json(reply.id, depth + 1)
+                }
+                replies.append(reply_data)
+            return replies
+        
+        threaded_messages = get_replies_recursive_json(thread_root.id)
         
         def serialize_thread(thread_data):
             result = []
