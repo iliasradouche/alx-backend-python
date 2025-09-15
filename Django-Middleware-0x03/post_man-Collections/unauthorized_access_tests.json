@@ -1,0 +1,339 @@
+{
+	"info": {
+		"_postman_id": "unauthorized-collection-id",
+		"name": "Messaging App - Unauthorized Access Tests",
+		"description": "Test JWT protection and unauthorized access scenarios",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Access Conversations Without Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Authentication required message', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Authentication credentials were not provided');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Access Messages Without Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Authentication required message', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Authentication credentials were not provided');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/messages/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Access Profile Without Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Authentication required message', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Authentication credentials were not provided');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/auth/profile/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"auth",
+						"profile",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Access with Invalid Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Invalid token message', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Given token not valid');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer invalid_token_here"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Access with Malformed Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Invalid token format message', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    // Could be 'Given token not valid' or 'Invalid token header'",
+							"    pm.expect(jsonData.detail).to.satisfy(function(detail) {",
+							"        return detail.includes('token') && (detail.includes('invalid') || detail.includes('not valid'));",
+							"    });",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer malformed.token.here"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Create Conversation Without Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Authentication required for POST operations', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Authentication credentials were not provided');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"participants\": [1]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/conversations/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Send Message Without Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Authentication required for sending messages', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Authentication credentials were not provided');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"conversation\": 1,\n    \"message_body\": \"Unauthorized message attempt\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/messages/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Access Specific Conversation Without Permission",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 401 Unauthorized', function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							"",
+							"pm.test('Cannot access specific conversation without auth', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('detail');",
+							"    pm.expect(jsonData.detail).to.include('Authentication credentials were not provided');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/1/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						"1",
+						""
+					]
+				}
+			}
+		}
+	]
+}
