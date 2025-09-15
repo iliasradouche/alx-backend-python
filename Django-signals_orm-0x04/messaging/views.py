@@ -81,13 +81,13 @@ def delete_user(request):
             # Use transaction to ensure atomicity
             with transaction.atomic():
                 # Get the user object
-                user_to_delete = request.user
+                user = request.user
 
                 # Log out the user before deletion
                 logout(request)
 
                 # Delete the user (this will trigger the post_delete signal)
-                user_to_delete.delete()
+                user.delete()
 
             # Success response
             success_msg = f"Account '{username}' has been successfully deleted."
