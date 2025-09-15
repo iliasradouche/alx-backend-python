@@ -30,6 +30,15 @@ class Message(models.Model):
         default=False,
         help_text="Whether the message has been read by the receiver"
     )
+    edited = models.BooleanField(
+        default=False,
+        help_text="Whether the message has been edited"
+    )
+    edited_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the message was last edited"
+    )
 
     class Meta:
         ordering = ['-timestamp']
@@ -38,6 +47,54 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username} at {self.timestamp}"
+
+    def mark_as_edited(self):
+        """Mark this message as edited and update the edited timestamp."""
+        self.edited = True
+        self.edited_at = timezone.now()
+        self.save(update_fields=['edited', 'edited_at'])
+
+
+class MessageHistory(models.Model):
+    """
+    Model to store the history of message edits.
+    Each time a message is edited, the old content is saved here.
+    """
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='history',
+        help_text="The message this history entry belongs to"
+    )
+    old_content = models.TextField(
+        help_text="The previous content of the message before edit"
+    )
+    edited_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='message_edits',
+        help_text="User who made the edit"
+    )
+    edited_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="When the edit was made"
+    )
+    version = models.PositiveIntegerField(
+        help_text="Version number of this edit (1 = original, 2 = first edit, etc.)"
+    )
+
+    class Meta:
+        ordering = ['-edited_at']
+        verbose_name = "Message History"
+        verbose_name_plural = "Message Histories"
+        unique_together = ['message', 'version']
+        indexes = [
+            models.Index(fields=['message', '-edited_at']),
+            models.Index(fields=['edited_by', '-edited_at']),
+        ]
+
+    def __str__(self):
+        return f"History v{self.version} for message {self.message.id} edited by {self.edited_by.username}"
 
 
 class Notification(models.Model):

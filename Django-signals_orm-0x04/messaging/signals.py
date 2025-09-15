@@ -1,7 +1,8 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
-from .models import Message, Notification
+from django.utils import timezone
+from .models import Message, Notification, MessageHistory
 
 
 @receiver(post_save, sender=Message)
@@ -46,6 +47,48 @@ def mark_message_as_unread(sender, instance, created, **kwargs):
         # Ensure new messages are always unread initially
         instance.is_read = False
         instance.save(update_fields=['is_read'])
+
+
+@receiver(pre_save, sender=Message)
+def log_message_edit_history(sender, instance, **kwargs):
+    """
+    Signal handler that logs the old content of a message before it's updated.
+    This creates a history entry when a message is edited.
+    
+    Args:
+        sender: The model class (Message)
+        instance: The actual instance being saved
+        **kwargs: Additional keyword arguments
+    """
+    if instance.pk:  # Only for existing messages (updates, not new creations)
+        try:
+            # Get the current version from database
+            old_message = Message.objects.get(pk=instance.pk)
+            
+            # Check if content has actually changed
+            if old_message.content != instance.content:
+                # Get the next version number
+                last_history = MessageHistory.objects.filter(
+                    message=instance
+                ).order_by('-version').first()
+                
+                next_version = (last_history.version + 1) if last_history else 1
+                
+                # Create history entry with old content
+                MessageHistory.objects.create(
+                    message=instance,
+                    old_content=old_message.content,
+                    edited_by=getattr(instance, '_edited_by', instance.sender),  # Use _edited_by if set, fallback to sender
+                    version=next_version
+                )
+                
+                # Mark message as edited
+                instance.edited = True
+                instance.edited_at = timezone.now()
+                
+        except Message.DoesNotExist:
+            # This shouldn't happen, but handle gracefully
+            pass
 
 
 def create_system_notification(user, title, content):
