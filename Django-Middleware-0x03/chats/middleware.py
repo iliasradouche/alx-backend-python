@@ -1,7 +1,9 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from django.conf import settings
+from django.http import JsonResponse
+from collections import defaultdict
 
 
 class RequestLoggingMiddleware:
@@ -79,3 +81,66 @@ class RestrictAccessByTimeMiddleware:
         # Process the request if within allowed hours
         response = self.get_response(request)
         return response
+
+
+class OffensiveLanguageMiddleware:
+    """
+    Middleware to limit the number of chat messages a user can send within a certain time window,
+    based on their IP address. Limits to 5 messages per minute.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Dictionary to store IP addresses and their request timestamps
+        # Format: {ip_address: [timestamp1, timestamp2, ...]}
+        self.ip_requests = defaultdict(list)
+        self.max_requests = 5  # Maximum requests per time window
+        self.time_window = timedelta(minutes=1)  # 1 minute time window
+    
+    def __call__(self, request):
+        # Only apply rate limiting to POST requests (chat messages)
+        if request.method == 'POST':
+            # Get client IP address
+            ip_address = self.get_client_ip(request)
+            current_time = datetime.now()
+            
+            # Clean old requests outside the time window
+            self.clean_old_requests(ip_address, current_time)
+            
+            # Check if the IP has exceeded the rate limit
+            if len(self.ip_requests[ip_address]) >= self.max_requests:
+                return JsonResponse({
+                    'error': 'Rate limit exceeded',
+                    'message': f'You can only send {self.max_requests} messages per minute. Please wait before sending another message.',
+                    'retry_after': 60  # seconds
+                }, status=429)  # HTTP 429 Too Many Requests
+            
+            # Add current request timestamp
+            self.ip_requests[ip_address].append(current_time)
+        
+        # Process the request
+        response = self.get_response(request)
+        return response
+    
+    def get_client_ip(self, request):
+        """
+        Get the client's IP address from the request.
+        Handles cases where the request comes through a proxy.
+        """
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            # Take the first IP if there are multiple (comma-separated)
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+    
+    def clean_old_requests(self, ip_address, current_time):
+        """
+        Remove request timestamps that are outside the current time window.
+        """
+        cutoff_time = current_time - self.time_window
+        self.ip_requests[ip_address] = [
+            timestamp for timestamp in self.ip_requests[ip_address]
+            if timestamp > cutoff_time
+        ]
