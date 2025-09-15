@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db import models
+from django.shortcuts import get_object_or_404
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import ConversationPermission, MessagePermission, IsMessageParticipant, IsParticipantOfConversation
@@ -21,6 +22,32 @@ class ConversationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return Conversation.objects.filter(participants=user)
 
+    def check_conversation_access(self, conversation_id):
+        """Check if user has access to the conversation."""
+        try:
+            conversation = get_object_or_404(Conversation, id=conversation_id)
+            if self.request.user not in conversation.participants.all():
+                return Response(
+                    {'error': 'Access denied to this conversation'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            return conversation
+        except Conversation.DoesNotExist:
+            return Response(
+                {'error': 'Conversation not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to add access control."""
+        conversation_id = kwargs.get('pk')
+        access_check = self.check_conversation_access(conversation_id)
+        if isinstance(access_check, Response):
+            return access_check
+        
+        serializer = self.get_serializer(access_check)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         conversation = serializer.save()
         if self.request.user not in conversation.participants.all():
@@ -28,7 +55,12 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], permission_classes=[IsParticipantOfConversation])
     def send_message(self, request, pk=None):
-        conversation = self.get_object()
+        conversation_id = pk
+        access_check = self.check_conversation_access(conversation_id)
+        if isinstance(access_check, Response):
+            return access_check
+        
+        conversation = access_check
         serializer = MessageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(conversation=conversation, sender=request.user)
@@ -51,5 +83,49 @@ class MessageViewSet(viewsets.ModelViewSet):
             models.Q(sender=user) | models.Q(receiver=user)
         ).select_related('sender', 'receiver', 'conversation')
 
+    def check_message_access(self, message_id):
+        """Check if user has access to the message."""
+        try:
+            message = get_object_or_404(Message, id=message_id)
+            if (message.sender != self.request.user and 
+                message.receiver != self.request.user):
+                return Response(
+                    {'error': 'Access denied to this message'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            return message
+        except Message.DoesNotExist:
+            return Response(
+                {'error': 'Message not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to add access control."""
+        message_id = kwargs.get('pk')
+        access_check = self.check_message_access(message_id)
+        if isinstance(access_check, Response):
+            return access_check
+        
+        serializer = self.get_serializer(access_check)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        # Check if conversation_id is provided and validate access
+        conversation_id = self.request.data.get('conversation_id')
+        if conversation_id:
+            try:
+                conversation = get_object_or_404(Conversation, id=conversation_id)
+                if self.request.user not in conversation.participants.all():
+                    return Response(
+                        {'error': 'Access denied to this conversation'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                serializer.save(sender=self.request.user, conversation=conversation)
+            except Conversation.DoesNotExist:
+                return Response(
+                    {'error': 'Conversation not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        else:
+            serializer.save(sender=self.request.user)
