@@ -1,0 +1,425 @@
+{
+	"info": {
+		"_postman_id": "messages-collection-id",
+		"name": "Messaging App - Messages Tests",
+		"description": "Message operations with pagination and filtering",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Message",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Message created successfully', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('message_id');",
+							"    pm.expect(jsonData).to.have.property('message_body');",
+							"    pm.expect(jsonData).to.have.property('sender');",
+							"    pm.expect(jsonData).to.have.property('sent_at');",
+							"    ",
+							"    // Store message ID for future tests",
+							"    pm.environment.set('message_id', jsonData.message_id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"conversation\": {{conversation_id}},\n    \"message_body\": \"This is a direct message creation test from Postman\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/messages/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "List All Messages",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has pagination structure', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('count');",
+							"    pm.expect(jsonData).to.have.property('next');",
+							"    pm.expect(jsonData).to.have.property('previous');",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Get Specific Message",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Message details returned', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('message_id');",
+							"    pm.expect(jsonData).to.have.property('message_body');",
+							"    pm.expect(jsonData).to.have.property('sender');",
+							"    pm.expect(jsonData).to.have.property('sent_at');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/{{message_id}}/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						"{{message_id}}",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "List Messages with Pagination",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Pagination working correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    pm.expect(jsonData.results.length).to.be.at.most(20); // MessagePagination page_size",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/?page=1&page_size=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "10"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Filter Messages by Sender",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Filtering by sender works', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    // All results should be from the specified sender",
+							"    if (jsonData.results.length > 0) {",
+							"        jsonData.results.forEach(function(message) {",
+							"            pm.expect(message.sender).to.equal(parseInt(pm.environment.get('user_id')));",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/?sender={{user_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					],
+					"query": [
+						{
+							"key": "sender",
+							"value": "{{user_id}}"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Filter Messages by Date Range",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Date filtering works correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    // All results should be within the specified date range",
+							"    if (jsonData.results.length > 0) {",
+							"        jsonData.results.forEach(function(message) {",
+							"            pm.expect(new Date(message.sent_at)).to.be.at.least(new Date('2024-01-01'));",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/?sent_at_after=2024-01-01&sent_at_before=2025-12-31",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					],
+					"query": [
+						{
+							"key": "sent_at_after",
+							"value": "2024-01-01"
+						},
+						{
+							"key": "sent_at_before",
+							"value": "2025-12-31"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Search Messages by Content",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Search functionality works', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    // Results should contain the search term in message body or sender email",
+							"    if (jsonData.results.length > 0) {",
+							"        jsonData.results.forEach(function(message) {",
+							"            var containsSearchTerm = message.message_body.toLowerCase().includes('test') || ",
+							"                                   (message.sender_email && message.sender_email.toLowerCase().includes('test'));",
+							"            pm.expect(containsSearchTerm).to.be.true;",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/?search=test",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					],
+					"query": [
+						{
+							"key": "search",
+							"value": "test"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Order Messages by Date",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Ordering works correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    // Check if results are ordered by sent_at (ascending)",
+							"    if (jsonData.results.length > 1) {",
+							"        for (let i = 1; i < jsonData.results.length; i++) {",
+							"            pm.expect(new Date(jsonData.results[i].sent_at)).to.be.at.least(new Date(jsonData.results[i-1].sent_at));",
+							"        }",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/messages/?ordering=sent_at",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"messages",
+						""
+					],
+					"query": [
+						{
+							"key": "ordering",
+							"value": "sent_at"
+						}
+					]
+				}
+			}
+		}
+	]
+}

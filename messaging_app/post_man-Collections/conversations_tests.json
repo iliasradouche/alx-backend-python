@@ -1,0 +1,367 @@
+{
+	"info": {
+		"_postman_id": "conversations-collection-id",
+		"name": "Messaging App - Conversations Tests",
+		"description": "CRUD operations for conversations with pagination and filtering",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Conversation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Conversation created successfully', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('conversation_id');",
+							"    pm.expect(jsonData).to.have.property('participants');",
+							"    pm.expect(jsonData).to.have.property('created_at');",
+							"    ",
+							"    // Store conversation ID for future tests",
+							"    pm.environment.set('conversation_id', jsonData.conversation_id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"participants\": [{{user_id}}]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/conversations/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "List All Conversations",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has pagination structure', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('count');",
+							"    pm.expect(jsonData).to.have.property('next');",
+							"    pm.expect(jsonData).to.have.property('previous');",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    pm.expect(jsonData.results).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "Get Specific Conversation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Conversation details returned', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('conversation_id');",
+							"    pm.expect(jsonData).to.have.property('participants');",
+							"    pm.expect(jsonData).to.have.property('created_at');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/{{conversation_id}}/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						"{{conversation_id}}",
+						""
+					]
+				}
+			}
+		},
+		{
+			"name": "List Conversations with Pagination",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Pagination working correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    pm.expect(jsonData.results.length).to.be.at.most(10); // ConversationPagination page_size",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/?page=1&page_size=5",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "page_size",
+							"value": "5"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Filter Conversations by Date",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Filtering works correctly', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    // All results should be after the specified date",
+							"    if (jsonData.results.length > 0) {",
+							"        jsonData.results.forEach(function(conversation) {",
+							"            pm.expect(new Date(conversation.created_at)).to.be.at.least(new Date('2024-01-01'));",
+							"        });",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/?created_at_after=2024-01-01",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					],
+					"query": [
+						{
+							"key": "created_at_after",
+							"value": "2024-01-01"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Search and Order Conversations",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Search and ordering works', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('results');",
+							"    // Check if results are ordered by created_at (ascending)",
+							"    if (jsonData.results.length > 1) {",
+							"        for (let i = 1; i < jsonData.results.length; i++) {",
+							"            pm.expect(new Date(jsonData.results[i].created_at)).to.be.at.least(new Date(jsonData.results[i-1].created_at));",
+							"        }",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/conversations/?ordering=created_at&search=test",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						""
+					],
+					"query": [
+						{
+							"key": "ordering",
+							"value": "created_at"
+						},
+						{
+							"key": "search",
+							"value": "test"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Send Message to Conversation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Message sent successfully', function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('message');",
+							"    pm.expect(jsonData.message).to.include('sent successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"message_body\": \"Hello! This is a test message from Postman.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/conversations/{{conversation_id}}/send_message/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"conversations",
+						"{{conversation_id}}",
+						"send_message",
+						""
+					]
+				}
+			}
+		}
+	]
+}
