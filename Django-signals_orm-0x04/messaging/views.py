@@ -327,6 +327,89 @@ def send_message(request):
 
 
 @login_required
+def unread_messages_inbox(request):
+    """
+    Display only unread messages in user's inbox using custom UnreadMessagesManager.
+    Uses .only() optimization to retrieve only necessary fields.
+    """
+    # Use custom manager to get unread messages with optimized query
+    unread_messages = Message.unread.for_user(request.user)
+    unread_count = Message.unread.unread_count_for_user(request.user)
+    
+    context = {
+        'unread_messages': unread_messages,
+        'unread_count': unread_count,
+        'user': request.user
+    }
+    return render(request, 'messaging/unread_inbox.html', context)
+
+
+@login_required
+@csrf_protect
+@require_http_methods(["POST"])
+def mark_messages_as_read(request):
+    """
+    Mark specific messages or all unread messages as read using custom manager.
+    """
+    try:
+        data = json.loads(request.body)
+        message_ids = data.get('message_ids', None)  # Optional: specific message IDs
+        
+        # Use custom manager to mark messages as read
+        updated_count = Message.unread.mark_as_read_for_user(
+            user=request.user,
+            message_ids=message_ids
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'updated_count': updated_count,
+            'message': f'{updated_count} messages marked as read'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def unread_messages_api(request):
+    """
+    API endpoint to get unread messages data in JSON format.
+    Uses custom manager with .only() optimization.
+    """
+    try:
+        # Get unread messages using custom manager
+        unread_messages = Message.unread.for_user(request.user)
+        unread_count = Message.unread.unread_count_for_user(request.user)
+        
+        # Serialize the optimized queryset
+        messages_data = []
+        for message in unread_messages:
+            messages_data.append({
+                'id': message.id,
+                'content': message.content,
+                'sender': {
+                    'username': message.sender.username,
+                    'full_name': f'{message.sender.first_name} {message.sender.last_name}'.strip()
+                },
+                'timestamp': message.timestamp.isoformat(),
+                'is_reply': message.parent_message_id is not None,
+                'parent_message_id': message.parent_message_id
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'unread_count': unread_count,
+            'messages': messages_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
 def get_thread_json(request, message_id):
     """
     API endpoint to get thread data in JSON format for AJAX requests.

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unread Messages - Inbox</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .user-info {
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        .unread-count {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .messages-container {
+            padding: 20px;
+        }
+        .message-item {
+            border: 1px solid #ffcccb;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 20px;
+            background: #fff5f5;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .message-item:hover {
+            background: #ffe6e6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .sender-info {
+            font-weight: bold;
+            color: #333;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .message-content {
+            color: #444;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .message-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .unread-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .no-messages {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .no-messages h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        .navigation {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            text-align: center;
+        }
+        .nav-link {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+        .bulk-actions {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        .bulk-actions button {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📬 Unread Messages</h1>
+            <div class="user-info">
+                Welcome, {{ user.username }}!
+                {% if unread_count > 0 %}
+                    <div class="unread-count">{{ unread_count }} unread message{{ unread_count|pluralize }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="messages-container">
+            {% if unread_count > 0 %}
+                <div class="bulk-actions">
+                    <button class="btn btn-success" onclick="markAllAsRead()">Mark All as Read</button>
+                    <button class="btn btn-primary" onclick="markSelectedAsRead()">Mark Selected as Read</button>
+                </div>
+
+                {% for message in unread_messages %}
+                    <div class="message-item" data-message-id="{{ message.id }}">
+                        <div class="unread-badge">NEW</div>
+                        <div class="message-header">
+                            <div class="sender-info">
+                                <input type="checkbox" class="message-checkbox" value="{{ message.id }}" style="margin-right: 10px;">
+                                From: {{ message.sender.username }}
+                                {% if message.sender.first_name or message.sender.last_name %}
+                                    ({{ message.sender.first_name }} {{ message.sender.last_name }})
+                                {% endif %}
+                            </div>
+                            <div class="timestamp">{{ message.timestamp|date:"M d, Y H:i" }}</div>
+                        </div>
+                        <div class="message-content">
+                            {{ message.content|truncatewords:30 }}
+                        </div>
+                        <div class="message-actions">
+                            {% if message.parent_message %}
+                                <a href="{% url 'messaging:thread_view' message.parent_message.id %}" class="btn btn-primary">View Thread</a>
+                            {% else %}
+                                <a href="{% url 'messaging:thread_view' message.id %}" class="btn btn-primary">View Thread</a>
+                            {% endif %}
+                            <button class="btn btn-success" onclick="markAsRead({{ message.id }})">Mark as Read</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-messages">
+                    <h3>🎉 All caught up!</h3>
+                    <p>You have no unread messages.</p>
+                    <a href="{% url 'messaging:conversations_list' %}" class="btn btn-primary">View All Conversations</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="navigation">
+            <a href="{% url 'messaging:conversations_list' %}" class="nav-link">All Conversations</a>
+            <a href="{% url 'messaging:unread_messages_api' %}" class="nav-link">API Endpoint</a>
+        </div>
+    </div>
+
+    <script>
+        // Mark individual message as read
+        function markAsRead(messageId) {
+            fetch('{% url "messaging:mark_messages_as_read" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    message_ids: [messageId]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while marking the message as read.');
+            });
+        }
+
+        // Mark all messages as read
+        function markAllAsRead() {
+            if (confirm('Mark all unread messages as read?')) {
+                fetch('{% url "messaging:mark_messages_as_read" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while marking messages as read.');
+                });
+            }
+        }
+
+        // Mark selected messages as read
+        function markSelectedAsRead() {
+            const checkboxes = document.querySelectorAll('.message-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('Please select at least one message.');
+                return;
+            }
+
+            const messageIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            
+            fetch('{% url "messaging:mark_messages_as_read" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    message_ids: messageIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while marking messages as read.');
+            });
+        }
+
+        // Get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

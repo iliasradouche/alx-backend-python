@@ -14,4 +14,9 @@ urlpatterns = [
     path("thread/<int:message_id>/", views.thread_view, name="thread_view"),
     path("send/", views.send_message, name="send_message"),
     path("api/thread/<int:message_id>/", views.get_thread_json, name="get_thread_json"),
+    
+    # Unread messages URLs (using custom UnreadMessagesManager)
+    path("unread/", views.unread_messages_inbox, name="unread_messages_inbox"),
+    path("api/unread/", views.unread_messages_api, name="unread_messages_api"),
+    path("mark-read/", views.mark_messages_as_read, name="mark_messages_as_read"),
 ]
