@@ -6,9 +6,10 @@ class MessagingConfig(AppConfig):
     Configuration class for the messaging app.
     This class handles the app configuration and ensures signals are properly connected.
     """
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'messaging'
-    verbose_name = 'Messaging System'
+
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "messaging"
+    verbose_name = "Messaging System"
 
     def ready(self):
         """
