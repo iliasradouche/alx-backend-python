@@ -4,6 +4,7 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import cache_page
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.core.exceptions import PermissionDenied
@@ -170,6 +171,7 @@ def user_deletion_success(request):
 
 
 @login_required
+@cache_page(60)
 def conversations_list(request):
     """
     Display all conversations for the current user with threading support.
