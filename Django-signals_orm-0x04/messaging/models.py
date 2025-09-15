@@ -1,46 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-
-
-class UnreadMessagesManager(models.Manager):
-    """
-    Custom manager to filter unread messages for a specific user.
-    Optimizes queries with .only() to retrieve only necessary fields.
-    """
-    
-    def for_user(self, user):
-        """
-        Get all unread messages for a specific user (as receiver).
-        Uses .only() to optimize query by retrieving only necessary fields.
-        """
-        return self.filter(
-            receiver=user,
-            is_read=False
-        ).select_related(
-            'sender', 'parent_message'
-        ).only(
-            'id', 'content', 'timestamp', 'is_read',
-            'sender__username', 'sender__first_name', 'sender__last_name',
-            'parent_message__id', 'parent_message__content'
-        ).order_by('-timestamp')
-    
-    def unread_count_for_user(self, user):
-        """
-        Get count of unread messages for a user.
-        """
-        return self.filter(receiver=user, is_read=False).count()
-    
-    def mark_as_read_for_user(self, user, message_ids=None):
-        """
-        Mark messages as read for a user.
-        If message_ids is provided, mark only those messages.
-        Otherwise, mark all unread messages for the user.
-        """
-        queryset = self.filter(receiver=user, is_read=False)
-        if message_ids:
-            queryset = queryset.filter(id__in=message_ids)
-        return queryset.update(is_read=True)
+from .managers import UnreadMessagesManager
 
 
 class Message(models.Model):

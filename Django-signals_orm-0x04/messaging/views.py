@@ -333,7 +333,7 @@ def unread_messages_inbox(request):
     Uses .only() optimization to retrieve only necessary fields.
     """
     # Use custom manager to get unread messages with optimized query
-    unread_messages = Message.unread.for_user(request.user)
+    unread_messages = Message.unread.unread_for_user(request.user)
     unread_count = Message.unread.unread_count_for_user(request.user)
     
     context = {
@@ -381,7 +381,7 @@ def unread_messages_api(request):
     """
     try:
         # Get unread messages using custom manager
-        unread_messages = Message.unread.for_user(request.user)
+        unread_messages = Message.unread.unread_for_user(request.user)
         unread_count = Message.unread.unread_count_for_user(request.user)
         
         # Serialize the optimized queryset
