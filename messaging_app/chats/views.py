@@ -2,6 +2,8 @@ from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 
@@ -31,6 +33,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@method_decorator(cache_page(60), name='list')
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
