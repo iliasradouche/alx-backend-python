@@ -146,7 +146,7 @@ class OffensiveLanguageMiddleware:
         ]
 
 
-class RolePermissionMiddleware:
+class RolepermissionMiddleware:
     """
     Middleware to check user's role before allowing access to specific actions.
     Only allows access for users with 'admin' or 'moderator' roles.
