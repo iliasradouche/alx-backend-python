@@ -17,13 +17,31 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.http import HttpResponse
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 from chats.auth import CustomTokenObtainPairView
 
+def home_view(request):
+    return HttpResponse("""
+    <html>
+    <head><title>Messaging App</title></head>
+    <body>
+        <h1>Welcome to Messaging App</h1>
+        <p>Available endpoints:</p>
+        <ul>
+            <li><a href="/admin/">Admin Panel</a></li>
+            <li><a href="/api/">API Endpoints</a></li>
+            <li><a href="/api-auth/">API Authentication</a></li>
+        </ul>
+    </body>
+    </html>
+    """)
+
 urlpatterns = [
+    path('', home_view, name='home'),  # Root URL pattern
     path("admin/", admin.site.urls),
     path('api/', include('chats.urls')),
     path('api-auth/', include('rest_framework.urls')),

@@ -32,6 +32,9 @@ class RequestLoggingMiddleware:
             self.logger.addHandler(file_handler)
     
     def __call__(self, request):
+        # Debug print to console
+        print(f"DEBUG: Middleware called for path: {request.path}")
+        
         # Get user information
         if request.user.is_authenticated:
             user = request.user.username
@@ -41,6 +44,7 @@ class RequestLoggingMiddleware:
         # Log the request information
         log_message = f"{datetime.now()} - User: {user} - Path: {request.path}"
         self.logger.info(log_message)
+        print(f"DEBUG: Logged message: {log_message}")
         
         # Process the request
         response = self.get_response(request)
