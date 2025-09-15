@@ -4,13 +4,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
+from django.db import models
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
+from .permissions import ConversationPermission, MessagePermission, IsMessageParticipant
 
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ConversationPermission]
     filter_backends = [filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['participants__email']
     ordering_fields = ['created_at']
@@ -37,14 +39,17 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MessagePermission]
     filter_backends = [filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['sender__email', 'message_body']
     ordering_fields = ['sent_at']
 
     def get_queryset(self):
         user = self.request.user
-        return Message.objects.filter(conversation__participants=user)
+        # Users can only see messages they sent or received
+        return Message.objects.filter(
+            models.Q(sender=user) | models.Q(receiver=user)
+        ).select_related('sender', 'receiver', 'conversation')
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
