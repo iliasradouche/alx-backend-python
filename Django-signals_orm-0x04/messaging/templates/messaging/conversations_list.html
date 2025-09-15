@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversations - Threaded Messaging</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .user-info {
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        .conversations-container {
+            padding: 20px;
+        }
+        .conversation-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 20px;
+            background: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .conversation-item:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .participants {
+            font-weight: bold;
+            color: #333;
+        }
+        .conversation-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .message-preview {
+            color: #555;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .message-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .timestamp {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        .no-conversations {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .no-conversations h3 {
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .new-message-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 20px;
+            transition: all 0.3s ease;
+        }
+        .new-message-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 Threaded Conversations</h1>
+            <div class="user-info">
+                Welcome back, <strong>{{ user.username }}</strong>!
+            </div>
+        </div>
+        
+        <div class="conversations-container">
+            <button class="new-message-btn" onclick="startNewConversation()">✉️ Start New Conversation</button>
+            
+            {% if conversations %}
+                {% for conversation in conversations %}
+                    <div class="conversation-item" onclick="openThread({{ conversation.root_message.id }})">
+                        <div class="conversation-header">
+                            <div class="participants">
+                                {% for participant in conversation.participants %}
+                                    {% if participant != user %}
+                                        👤 {{ participant.username }}
+                                        {% if not forloop.last %}, {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="conversation-meta">
+                                <span class="message-count">{{ conversation.message_count }} message{{ conversation.message_count|pluralize }}</span>
+                                <span class="timestamp">{{ conversation.last_activity|timesince }} ago</span>
+                            </div>
+                        </div>
+                        
+                        <div class="message-preview">
+                            "{{ conversation.root_message.content|truncatechars:100 }}"
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-conversations">
+                    <h3>📭 No conversations yet</h3>
+                    <p>Start your first conversation by clicking the button above!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        function openThread(messageId) {
+            window.location.href = `/messaging/thread/${messageId}/`;
+        }
+        
+        function startNewConversation() {
+            // This would typically open a modal or redirect to a compose page
+            alert('New conversation feature would be implemented here!');
+        }
+    </script>
+</body>
+</html>

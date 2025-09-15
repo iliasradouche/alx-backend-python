@@ -1,0 +1,24 @@
+<div class="message reply depth-{{ reply_data.depth }}" data-message-id="{{ reply_data.message.id }}">
+    <div class="message-header">
+        <span class="sender">👤 {{ reply_data.message.sender.username }}</span>
+        <span class="timestamp">{{ reply_data.message.timestamp|timesince }} ago</span>
+    </div>
+    <div class="message-content">
+        {{ reply_data.message.content|linebreaks }}
+    </div>
+    <div class="message-actions">
+        <button class="reply-btn" onclick="toggleReplyForm({{ reply_data.message.id }})">💬 Reply</button>
+    </div>
+    <div class="reply-form" id="reply-form-{{ reply_data.message.id }}">
+        <textarea placeholder="Write your reply..." id="reply-content-{{ reply_data.message.id }}"></textarea>
+        <div class="reply-form-actions">
+            <button class="send-reply-btn" onclick="sendReply({{ reply_data.message.id }})">Send Reply</button>
+            <button class="cancel-reply-btn" onclick="toggleReplyForm({{ reply_data.message.id }})">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Recursively render nested replies -->
+{% for nested_reply in reply_data.replies %}
+    {% include 'messaging/reply_partial.html' with reply_data=nested_reply %}
+{% endfor %}

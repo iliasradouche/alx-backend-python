@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thread View - Threaded Messaging</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .thread-container {
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .message.root {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196f3;
+        }
+        .message.reply {
+            background: #f8f9fa;
+            border-left: 3px solid #6c757d;
+        }
+        .message.depth-1 { margin-left: 30px; }
+        .message.depth-2 { margin-left: 60px; }
+        .message.depth-3 { margin-left: 90px; }
+        .message.depth-4 { margin-left: 120px; }
+        .message.depth-5 { margin-left: 150px; }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .sender {
+            font-weight: bold;
+            color: #333;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.8rem;
+        }
+        .message-content {
+            color: #444;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+        .message-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .reply-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        .reply-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        .reply-form {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        .reply-form.active {
+            display: block;
+        }
+        .reply-form textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .reply-form-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .send-reply-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .cancel-reply-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .new-message-form {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        .new-message-form h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .send-message-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .send-message-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧵 Thread View</h1>
+            <a href="/messaging/" class="back-btn">← Back to Conversations</a>
+        </div>
+        
+        <div class="thread-container">
+            <!-- Root Message -->
+            <div class="message root" data-message-id="{{ root_message.id }}">
+                <div class="message-header">
+                    <span class="sender">👤 {{ root_message.sender.username }}</span>
+                    <span class="timestamp">{{ root_message.timestamp|timesince }} ago</span>
+                </div>
+                <div class="message-content">
+                    {{ root_message.content|linebreaks }}
+                </div>
+                <div class="message-actions">
+                    <button class="reply-btn" onclick="toggleReplyForm({{ root_message.id }})">💬 Reply</button>
+                </div>
+                <div class="reply-form" id="reply-form-{{ root_message.id }}">
+                    <textarea placeholder="Write your reply..." id="reply-content-{{ root_message.id }}"></textarea>
+                    <div class="reply-form-actions">
+                        <button class="send-reply-btn" onclick="sendReply({{ root_message.id }})">Send Reply</button>
+                        <button class="cancel-reply-btn" onclick="toggleReplyForm({{ root_message.id }})">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Threaded Replies -->
+            {% for reply_data in threaded_messages %}
+                {% include 'messaging/reply_partial.html' with reply_data=reply_data %}
+            {% endfor %}
+        </div>
+        
+        <div class="new-message-form">
+            <h3>💌 Send a new message in this thread</h3>
+            <div class="form-group">
+                <label for="message-content">Message:</label>
+                <textarea id="message-content" placeholder="Type your message here..."></textarea>
+            </div>
+            <button class="send-message-btn" onclick="sendNewMessage()">Send Message</button>
+        </div>
+    </div>
+    
+    <script>
+        function toggleReplyForm(messageId) {
+            const form = document.getElementById(`reply-form-${messageId}`);
+            form.classList.toggle('active');
+            if (form.classList.contains('active')) {
+                document.getElementById(`reply-content-${messageId}`).focus();
+            }
+        }
+        
+        function sendReply(parentMessageId) {
+            const content = document.getElementById(`reply-content-${parentMessageId}`).value.trim();
+            if (!content) {
+                alert('Please enter a reply message.');
+                return;
+            }
+            
+            // Get the receiver from the parent message
+            const receiverId = getReceiverIdForReply(parentMessageId);
+            
+            const data = {
+                receiver_id: receiverId,
+                content: content,
+                parent_message_id: parentMessageId
+            };
+            
+            sendMessage(data, () => {
+                document.getElementById(`reply-content-${parentMessageId}`).value = '';
+                toggleReplyForm(parentMessageId);
+                location.reload(); // Refresh to show new reply
+            });
+        }
+        
+        function sendNewMessage() {
+            const content = document.getElementById('message-content').value.trim();
+            if (!content) {
+                alert('Please enter a message.');
+                return;
+            }
+            
+            // For new messages in thread, reply to root message
+            const receiverId = getReceiverIdForReply({{ root_message.id }});
+            
+            const data = {
+                receiver_id: receiverId,
+                content: content,
+                parent_message_id: {{ root_message.id }}
+            };
+            
+            sendMessage(data, () => {
+                document.getElementById('message-content').value = '';
+                location.reload(); // Refresh to show new message
+            });
+        }
+        
+        function getReceiverIdForReply(messageId) {
+            // In a real implementation, you'd determine the appropriate receiver
+            // For now, we'll use a simple logic: reply to the other participant
+            {% if root_message.sender == user %}
+                return {{ root_message.receiver.id }};
+            {% else %}
+                return {{ root_message.sender.id }};
+            {% endif %}
+        }
+        
+        function sendMessage(data, onSuccess) {
+            fetch('/messaging/send/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    onSuccess();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while sending the message.');
+            });
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

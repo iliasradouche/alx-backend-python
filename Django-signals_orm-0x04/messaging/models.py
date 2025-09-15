@@ -5,7 +5,7 @@ from django.utils import timezone
 
 class Message(models.Model):
     """
-    Model representing a message sent between users.
+    Model representing a message sent between users with threading support.
     """
 
     sender = models.ForeignKey(
@@ -19,6 +19,14 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         related_name="received_messages",
         help_text="User who receives the message",
+    )
+    parent_message = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        related_name="replies",
+        null=True,
+        blank=True,
+        help_text="Parent message if this is a reply",
     )
     content = models.TextField(help_text="Content of the message")
     timestamp = models.DateTimeField(
@@ -47,6 +55,57 @@ class Message(models.Model):
         self.edited = True
         self.edited_at = timezone.now()
         self.save(update_fields=["edited", "edited_at"])
+
+    @classmethod
+    def get_conversations_optimized(cls, user):
+        """Get all conversations for a user with optimized queries."""
+        return cls.objects.filter(
+            models.Q(sender=user) | models.Q(receiver=user)
+        ).select_related(
+            'sender', 'receiver', 'parent_message'
+        ).prefetch_related(
+            'replies__sender', 'replies__receiver'
+        ).order_by('-timestamp')
+
+    @classmethod
+    def get_thread_optimized(cls, root_message_id):
+        """Get a complete message thread with optimized queries."""
+        return cls.objects.filter(
+            models.Q(id=root_message_id) | models.Q(parent_message_id=root_message_id)
+        ).select_related(
+            'sender', 'receiver', 'parent_message'
+        ).prefetch_related(
+            'replies__sender', 'replies__receiver'
+        ).order_by('timestamp')
+
+    def get_all_replies_recursive(self):
+        """Recursively get all replies to this message."""
+        def get_replies_tree(message, depth=0):
+            replies = []
+            direct_replies = message.replies.select_related(
+                'sender', 'receiver'
+            ).order_by('timestamp')
+            
+            for reply in direct_replies:
+                reply_data = {
+                    'message': reply,
+                    'depth': depth,
+                    'replies': get_replies_tree(reply, depth + 1)
+                }
+                replies.append(reply_data)
+            return replies
+        
+        return get_replies_tree(self)
+
+    def is_reply(self):
+        """Check if this message is a reply to another message."""
+        return self.parent_message is not None
+
+    def get_thread_root(self):
+        """Get the root message of this thread."""
+        if self.parent_message:
+            return self.parent_message.get_thread_root()
+        return self
 
 
 class MessageHistory(models.Model):
