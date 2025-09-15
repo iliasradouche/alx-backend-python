@@ -6,17 +6,23 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db import models
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import ConversationPermission, MessagePermission, IsMessageParticipant, IsParticipantOfConversation
+from .pagination import MessagePagination, ConversationPagination
+from .filters import MessageFilter, ConversationFilter
 
 class ConversationViewSet(viewsets.ModelViewSet):
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
     permission_classes = [IsParticipantOfConversation]
-    filter_backends = [filters.OrderingFilter, filters.SearchFilter]
+    pagination_class = ConversationPagination
+    filterset_class = ConversationFilter
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['participants__email']
     ordering_fields = ['created_at']
+    ordering = ['-created_at']
 
     def get_queryset(self):
         user = self.request.user
@@ -72,9 +78,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsParticipantOfConversation]
-    filter_backends = [filters.OrderingFilter, filters.SearchFilter]
+    pagination_class = MessagePagination
+    filterset_class = MessageFilter
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['sender__email', 'message_body']
     ordering_fields = ['sent_at']
+    ordering = ['-sent_at']
 
     def get_queryset(self):
         user = self.request.user
