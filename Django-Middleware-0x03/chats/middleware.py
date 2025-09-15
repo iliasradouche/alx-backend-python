@@ -144,3 +144,66 @@ class OffensiveLanguageMiddleware:
             timestamp for timestamp in self.ip_requests[ip_address]
             if timestamp > cutoff_time
         ]
+
+
+class RolePermissionMiddleware:
+    """
+    Middleware to check user's role before allowing access to specific actions.
+    Only allows access for users with 'admin' or 'moderator' roles.
+    Returns 403 Forbidden for unauthorized users.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Define allowed roles
+        self.allowed_roles = ['admin', 'moderator']
+    
+    def __call__(self, request):
+        # Check if user is authenticated
+        if request.user.is_authenticated:
+            # Get user's role - assuming role is stored in user profile or groups
+            user_role = self.get_user_role(request.user)
+            
+            # Check if user has required role
+            if user_role not in self.allowed_roles:
+                return JsonResponse({
+                    'error': 'Access denied',
+                    'message': 'You do not have permission to access this resource. Admin or moderator role required.',
+                    'required_roles': self.allowed_roles,
+                    'user_role': user_role
+                }, status=403)  # HTTP 403 Forbidden
+        else:
+            # User is not authenticated
+            return JsonResponse({
+                'error': 'Authentication required',
+                'message': 'You must be logged in to access this resource.'
+            }, status=403)  # HTTP 403 Forbidden
+        
+        # Process the request if user has proper role
+        response = self.get_response(request)
+        return response
+    
+    def get_user_role(self, user):
+        """
+        Get the user's role. This method can be customized based on how roles are stored.
+        Common approaches:
+        1. User groups: user.groups.first().name
+        2. User profile field: user.profile.role
+        3. Custom user model field: user.role
+        """
+        # Method 1: Check if user is superuser (admin)
+        if user.is_superuser:
+            return 'admin'
+        
+        # Method 2: Check user groups
+        if user.groups.exists():
+            # Get the first group name as role
+            group_name = user.groups.first().name.lower()
+            return group_name
+        
+        # Method 3: Check if user has staff status (could be moderator)
+        if user.is_staff:
+            return 'moderator'
+        
+        # Default role for regular users
+        return 'user'
