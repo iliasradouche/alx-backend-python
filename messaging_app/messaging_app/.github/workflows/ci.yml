@@ -56,11 +56,13 @@ jobs:
         mysql -h 127.0.0.1 -P 3306 -u root -prootpassword -e "CREATE DATABASE IF NOT EXISTS messaging_app_test;"
         mysql -h 127.0.0.1 -P 3306 -u root -prootpassword -e "GRANT ALL PRIVILEGES ON messaging_app_test.* TO 'testuser'@'%';"
     
-    - name: Run linting
+    - name: Run linting with flake8
       run: |
         cd messaging_app
+        # First check for critical errors that should always fail the build
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        # Then run full linting check - fail build if any errors are found
+        flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Run migrations
       env:
@@ -77,9 +79,12 @@ jobs:
         DJANGO_SETTINGS_MODULE: messaging_app.settings
       run: |
         cd messaging_app
+        # Run tests with coverage collection
         coverage run --source='.' -m pytest --junitxml=test-results.xml -v
+        # Generate coverage reports in multiple formats
         coverage xml -o coverage.xml
-        coverage report
+        coverage html -d coverage_html
+        coverage report --show-missing
     
     - name: Upload test results
       uses: actions/upload-artifact@v3
@@ -90,9 +95,12 @@ jobs:
     
     - name: Upload coverage reports
       uses: actions/upload-artifact@v3
+      if: always()
       with:
-        name: coverage-report
-        path: messaging_app/coverage.xml
+        name: coverage-reports
+        path: |
+          messaging_app/coverage.xml
+          messaging_app/coverage_html/
     
     - name: Comment coverage on PR
       if: github.event_name == 'pull_request'
