@@ -26,7 +26,7 @@ pipeline {
                 sh '''
                     python3 -m venv venv
                     . venv/bin/activate
-                    pip install --upgrade pip
+                    pip3 install --upgrade pip
                 '''
             }
         }
@@ -36,8 +36,7 @@ pipeline {
                 echo 'Installing Python dependencies...'
                 sh '''
                     . venv/bin/activate
-                    cd messaging_app
-                    pip install -r requirements.txt
+                    pip3 install -r messaging_app/requirements.txt
                 '''
             }
         }
