@@ -1,0 +1,133 @@
+---
+# Ingress Resource for Django Messaging App
+# This configures Nginx Ingress Controller to route traffic to the Django application
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: django-messaging-ingress
+  namespace: default
+  labels:
+    app: django-messaging-app
+  annotations:
+    # Use Nginx Ingress Controller
+    kubernetes.io/ingress.class: "nginx"
+    # Enable SSL redirect (optional)
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Rewrite target for API paths
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # Enable CORS (optional)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    # Connection timeout settings
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  rules:
+  # Main domain rule
+  - host: django-messaging.local
+    http:
+      paths:
+      # Root path - serves the main application
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: django-messaging-service
+            port:
+              number: 80
+      
+      # API path - serves the Django REST API
+      - path: /api(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: django-messaging-service
+            port:
+              number: 80
+      
+      # Admin path - serves Django admin interface
+      - path: /admin(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: django-messaging-service
+            port:
+              number: 80
+      
+      # Static files path
+      - path: /static(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: django-messaging-service
+            port:
+              number: 80
+      
+      # Media files path
+      - path: /media(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: django-messaging-service
+            port:
+              number: 80
+
+---
+# Alternative Ingress for API-only access (optional)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: django-api-ingress
+  namespace: default
+  labels:
+    app: django-messaging-app
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+spec:
+  rules:
+  # API-specific domain
+  - host: api.django-messaging.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: django-messaging-service
+            port:
+              number: 80
+
+---
+# TLS Configuration (optional - for HTTPS)
+# Uncomment and configure if you have SSL certificates
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: django-messaging-ingress-tls
+#   namespace: default
+#   annotations:
+#     kubernetes.io/ingress.class: "nginx"
+#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+# spec:
+#   tls:
+#   - hosts:
+#     - django-messaging.local
+#     - api.django-messaging.local
+#     secretName: django-messaging-tls
+#   rules:
+#   - host: django-messaging.local
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: django-messaging-service
+#             port:
+#               number: 80
