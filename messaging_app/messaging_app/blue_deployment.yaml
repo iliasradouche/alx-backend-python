@@ -1,0 +1,100 @@
+---
+# Django Messaging App Blue Deployment (Current Version)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-messaging-app-blue
+  labels:
+    app: django-messaging-app-blue
+    version: blue
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django-messaging-app-blue
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: django-messaging-app-blue
+        version: blue
+    spec:
+      containers:
+      - name: django-messaging-app
+        image: django-messaging-app:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: "messaging_app.settings"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: DEBUG
+          value: "False"
+        - name: ALLOWED_HOSTS
+          value: "*"
+        - name: VERSION
+          value: "blue"
+        - name: DEPLOYMENT_VERSION
+          value: "1.0"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /admin/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /admin/
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        imagePullPolicy: Never  # For local development with minikube
+
+---
+# Blue Service (currently receiving traffic)
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-messaging-service-blue
+  labels:
+    app: django-messaging-app-blue
+    version: blue
+spec:
+  type: ClusterIP
+  selector:
+    app: django-messaging-app-blue
+    version: blue
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+
+---
+# ConfigMap for Blue Django settings
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: django-config-blue
+  labels:
+    version: blue
+data:
+  DJANGO_SETTINGS_MODULE: "messaging_app.settings"
+  DEBUG: "False"
+  ALLOWED_HOSTS: "*"
+  VERSION: "blue"
+  DEPLOYMENT_VERSION: "1.0"

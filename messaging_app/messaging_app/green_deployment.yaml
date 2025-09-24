@@ -1,24 +1,27 @@
 ---
-# Django Messaging App Deployment
+# Django Messaging App Green Deployment (New Version)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: django-messaging-app
+  name: django-messaging-app-green
   labels:
-    app: django-messaging-app
+    app: django-messaging-app-green
+    version: green
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: django-messaging-app
+      app: django-messaging-app-green
+      version: green
   template:
     metadata:
       labels:
-        app: django-messaging-app
+        app: django-messaging-app-green
+        version: green
     spec:
       containers:
       - name: django-messaging-app
-        image: django-messaging-app:latest
+        image: django-messaging-app:v2.0  # New version
         ports:
         - containerPort: 8000
         env:
@@ -32,6 +35,10 @@ spec:
           value: "False"
         - name: ALLOWED_HOSTS
           value: "*"
+        - name: VERSION
+          value: "green"
+        - name: DEPLOYMENT_VERSION
+          value: "2.0"
         resources:
           requests:
             memory: "256Mi"
@@ -58,17 +65,19 @@ spec:
         imagePullPolicy: Never  # For local development with minikube
 
 ---
-# Django Messaging App Service (ClusterIP)
+# Green Service (initially not receiving traffic)
 apiVersion: v1
 kind: Service
 metadata:
-  name: django-messaging-service
+  name: django-messaging-service-green
   labels:
-    app: django-messaging-app
+    app: django-messaging-app-green
+    version: green
 spec:
   type: ClusterIP
   selector:
-    app: django-messaging-app
+    app: django-messaging-app-green
+    version: green
   ports:
   - name: http
     port: 80
@@ -76,12 +85,16 @@ spec:
     protocol: TCP
 
 ---
-# ConfigMap for Django settings (optional)
+# ConfigMap for Green Django settings
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: django-config
+  name: django-config-green
+  labels:
+    version: green
 data:
   DJANGO_SETTINGS_MODULE: "messaging_app.settings"
   DEBUG: "False"
   ALLOWED_HOSTS: "*"
+  VERSION: "green"
+  DEPLOYMENT_VERSION: "2.0"

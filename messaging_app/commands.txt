@@ -1,0 +1,98 @@
+# Commands for Kubernetes Ingress Setup and Management
+# ALX Backend Python - Messaging App
+
+# ===== TASK 1: Nginx Ingress Controller Setup =====
+
+# 1. Enable Ingress addon in Minikube
+minikube addons enable ingress
+
+# 2. Verify Ingress controller is running
+kubectl get pods -n ingress-nginx
+
+# 3. Wait for Ingress controller to be ready
+kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=300s
+
+# 4. Apply the Ingress configuration
+kubectl apply -f ingress.yaml
+
+# 5. Verify Ingress resource is created
+kubectl get ingress
+
+# 6. Get Ingress details
+kubectl describe ingress django-messaging-ingress
+
+# 7. Get Minikube IP for testing
+minikube ip
+
+# 8. Test the Ingress (replace <MINIKUBE_IP> with actual IP)
+# curl -H "Host: django-messaging.local" http://<MINIKUBE_IP>/
+# curl -H "Host: django-messaging.local" http://<MINIKUBE_IP>/api/
+# curl -H "Host: django-messaging.local" http://<MINIKUBE_IP>/admin/
+
+# ===== TASK 2: Blue-Green Deployment Commands =====
+
+# 1. Apply blue deployment (current version)
+kubectl apply -f blue_deployment.yaml
+
+# 2. Apply green deployment (new version)
+kubectl apply -f green_deployment.yaml
+
+# 3. Apply service configuration
+kubectl apply -f kubeservice.yaml
+
+# 4. Run blue-green deployment script
+./kubctl-0x02
+
+# 5. Check deployments
+kubectl get deployments
+
+# 6. Check pods for both versions
+kubectl get pods -l version=blue
+kubectl get pods -l version=green
+
+# 7. Switch traffic to green version (update service selector)
+kubectl patch service django-messaging-service -p '{"spec":{"selector":{"version":"green"}}}'
+
+# 8. Verify traffic switch
+kubectl get service django-messaging-service -o yaml
+
+# ===== TASK 3: Rolling Update Commands =====
+
+# 1. Run rolling update script
+./kubctl-0x03
+
+# 2. Monitor rollout status
+kubectl rollout status deployment/django-messaging-app-blue
+
+# 3. Check rollout history
+kubectl rollout history deployment/django-messaging-app-blue
+
+# 4. Verify updated pods
+kubectl get pods -l app=django-messaging-app-blue
+
+# 5. Check pod details to verify image version
+kubectl describe pods -l app=django-messaging-app-blue | grep Image
+
+# 6. Rollback if needed (optional)
+# kubectl rollout undo deployment/django-messaging-app-blue
+
+# ===== General Monitoring Commands =====
+
+# Monitor all resources
+kubectl get all
+
+# Check logs for troubleshooting
+kubectl logs -l app=django-messaging-app --tail=50
+
+# Monitor resource usage
+kubectl top pods
+kubectl top nodes
+
+# Port forward for local testing (if needed)
+kubectl port-forward service/django-messaging-service 8080:80
+
+# Clean up resources (when done)
+# kubectl delete -f ingress.yaml
+# kubectl delete -f blue_deployment.yaml
+# kubectl delete -f green_deployment.yaml
+# kubectl delete -f kubeservice.yaml
