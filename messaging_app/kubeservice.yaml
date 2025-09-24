@@ -1,0 +1,94 @@
+---
+# Main Service for Blue-Green Deployment Traffic Switching
+# This service will route traffic to either blue or green deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-messaging-service
+  labels:
+    app: django-messaging-app
+    service-type: main
+  annotations:
+    description: "Main service for blue-green deployment traffic switching"
+spec:
+  type: ClusterIP
+  # Initially points to blue deployment
+  selector:
+    app: django-messaging-app-blue
+    version: blue
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+
+---
+# LoadBalancer Service for External Access (optional)
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-messaging-service-lb
+  labels:
+    app: django-messaging-app
+    service-type: loadbalancer
+  annotations:
+    description: "LoadBalancer service for external access"
+spec:
+  type: LoadBalancer
+  # Initially points to blue deployment
+  selector:
+    app: django-messaging-app-blue
+    version: blue
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+
+---
+# NodePort Service for Minikube Access
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-messaging-service-nodeport
+  labels:
+    app: django-messaging-app
+    service-type: nodeport
+  annotations:
+    description: "NodePort service for Minikube access"
+spec:
+  type: NodePort
+  # Initially points to blue deployment
+  selector:
+    app: django-messaging-app-blue
+    version: blue
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    nodePort: 30080
+    protocol: TCP
+
+---
+# Service Monitor for Prometheus (optional)
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-messaging-service-monitor
+  labels:
+    app: django-messaging-app
+    service-type: monitor
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app: django-messaging-app-blue
+    version: blue
+  ports:
+  - name: metrics
+    port: 8000
+    targetPort: 8000
+    protocol: TCP

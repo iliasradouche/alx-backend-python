@@ -97,4 +97,4 @@ data:
   DEBUG: "False"
   ALLOWED_HOSTS: "*"
   VERSION: "blue"
-  DEPLOYMENT_VERSION: "1.0"
+  DEPLOYMENT_VERSION: "2.0"
